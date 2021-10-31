@@ -92,31 +92,50 @@ def astar(maze):
     (Heuristic Function은 위에서 정의한 manhatten_dist function을 사용할 것.)
     """
 
-    start_point=maze.startPoint()
+    start_point = maze.startPoint()
 
-    end_point=maze.circlePoints()[0]
-
-    path=[]
+    end_point = maze.circlePoints()[0]
 
     ####################### Write Your Code Here ################################
+    class frontier_node:
+        def __init__(self, x, y, path):
+            self.x = x
+            self.y = y
+            self.path = path
+            self.f = manhatten_dist([x, y], end_point) + len(path)
+
+        def __lt__(self, other):
+            return self.f < other.f
 
 
+    path_list = []  # 경로를 저장할 이차원 배열 생성. 이 배열을 이용해 closed 여부도 파악할 수 있다.
+    for i in range(maze.rows):  # x: rows , y : cols
+        path_list.append([])
+        for j in range(maze.cols):
+            path_list[i].append(None)
+    frontiers = []
+    heapq.heappush(frontiers, frontier_node(start_point[0], start_point[1], [list(start_point)]))  # bfs의 frontier을 저장할 fifo queue
 
+    while len(frontiers) > 0:
+        tmpnode = heapq.heappop(frontiers)
+        x = tmpnode.x
+        y = tmpnode.y
+        if not path_list[x][y]:
+            path_list[x][y] = tmpnode.path
+        elif len(path_list[x][y]) > len(tmpnode.path):
+            path_list[x][y] = tmpnode.path
+        else:
+            continue
 
+        for new_x, new_y in maze.neighborPoints(x, y):
+            if maze.isWall(new_x, new_y):  # 다음 탐색할 좌표가 벽인지 확인
+                continue
 
+            if maze.isObjective(new_x, new_y):
+                return path_list[x][y] + [[new_x, new_y]]
+            heapq.heappush(frontiers, frontier_node(new_x, new_y, path_list[x][y] + [[new_x, new_y]]))
 
-
-
-
-
-
-
-
-
-
-
-
-    return path
+    return []
 
     ############################################################################
 
