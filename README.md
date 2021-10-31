@@ -1,4 +1,5 @@
 # CSE4185 Assignment01: Maze Game
+Sogang Univ. 2021-2 기초인공지능 과제1
 
 ## Implement:
 BFS와 A * Algorithm을 활용한 최단 경로 찾기 
