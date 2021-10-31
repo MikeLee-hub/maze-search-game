@@ -144,9 +144,11 @@ def astar(maze):
 
 
 
-def stage2_heuristic():
-    pass
-
+def stage2_heuristic(current_point, end_points):
+    heuristic = 0
+    for end_point in end_points:
+        heuristic += manhatten_dist(current_point, end_point)
+    return heuristic/len(end_points)
 
 def astar_four_circles(maze):
     """
@@ -154,31 +156,69 @@ def astar_four_circles(maze):
     (단 Heurstic Function은 위의 stage2_heuristic function을 직접 정의하여 사용해야 한다.)
     """
 
-    end_points=maze.circlePoints()
+    end_points = maze.circlePoints()
     end_points.sort()
 
-    path=[]
-
     ####################### Write Your Code Here ################################
+    class frontier_node:            # frontier list의 node를 위한 class
+        def __init__(self, g, current_point, end_points, before_states):
+            self.current_point = current_point
+            self.g = g
+            self.h = stage2_heuristic(current_point, end_points)
+            self.f = g + self.h
+            self.end_points = end_points
+            self.before_states = before_states
 
+        def __lt__(self, other):    # priority queue 사용을 위해 객체 간 비교 속성 설정
+            return self.f < other.f     # a* 알고리즘은 f(n)값에 따라 frontier 우선순위가 결정되므로 f값 비교
 
+    start_point = maze.startPoint()
 
+    visited = []
+    for i in range(maze.rows):  # 이미 확인한 상태 체크. 상태는 current_point와 end_points로 구분
+        visited.append([])
+        for j in range(maze.cols):
+            visited[i].append([])
 
+    previous_states = dict()
+    def trace_path(previous_state):     # previous_states정보를 바탕으로 path를 구성하는 함수
+        path = []
+        while previous_state != (start_point, tuple(end_points)):
+            path.append(previous_state[0])
+            previous_state = previous_states[previous_state[0], previous_state[1]]
+        path.append(start_point)
+        return path[::-1]
 
+    frontiers = []          # frontier list (heapq를 이용하여 priority queue처럼 사용)
+    heapq.heappush(frontiers, frontier_node(0, start_point, end_points, None))
 
+    while len(frontiers) > 0:
+        current_node = heapq.heappop(frontiers)
 
+        current_x, current_y = current_node.current_point
+        if current_node.end_points in visited[current_x][current_y]:    # 이미 체크한 상태이면 넘어가기
+            continue
+        visited[current_x][current_y].append(current_node.end_points)   # visited에 현재 상태 추가
+        previous_states[current_node.current_point, tuple(current_node.end_points)] = current_node.before_states    # previous state 저장
 
+        next_g = current_node.g + 1
+        next_end_points = current_node.end_points
+        if current_node.current_point in current_node.end_points:
+            next_end_points = deepcopy(next_end_points)
+            next_end_points.remove(current_node.current_point)
+            if len(next_end_points) == 0:
+                return trace_path(((current_x, current_y), tuple(current_node.end_points)))
 
+        for next_x, next_y in maze.neighborPoints(current_x, current_y):
+            if maze.isWall(next_x, next_y):
+                continue
+            heapq.heappush(frontiers, frontier_node(next_g,
+                                                    (next_x, next_y),
+                                                    deepcopy(next_end_points),
+                                                    (current_node.current_point, tuple(current_node.end_points))))
 
+    return []
 
-
-
-
-
-
-
-
-    return path
 
     ############################################################################
 
