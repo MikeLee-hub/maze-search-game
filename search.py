@@ -1,6 +1,8 @@
 ###### Write Your Library Here ###########
 
+import heapq
 from collections import deque
+from copy import deepcopy
 
 #########################################
 
@@ -223,33 +225,73 @@ def astar_four_circles(maze):
     ############################################################################
 
 
-
 # -------------------- Stage 03: Many circles - A* Algorithm -------------------- #
+def mst(end_points, edge_cost_list, mst_cache):
 
-def mst(objectives, edges):
-
-    cost_sum=0
+    cost_sum = 0
     ####################### Write Your Code Here ################################
+    if len(end_points) == 0:
+        return 0
+    if frozenset(end_points) in mst_cache:
+        return mst_cache[frozenset(end_points)]
+    original_end_points = deepcopy(end_points)
 
+    checked_end_points = [end_points[0]]
+    end_points = end_points[1:]
+    while len(end_points) > 0:
+        minimum_edge = end_points[0]
+        mininum_edge_cost = edge_cost_list[checked_end_points[0], end_points[0]]
+        for i in checked_end_points:
+            for j in end_points:
+                new_edge_cost = edge_cost_list[i, j]
+                if new_edge_cost < mininum_edge_cost:
+                    minimum_edge = j
+                    mininum_edge_cost = new_edge_cost
 
-
-
-
-
-
-
-
-
-
-
-
+        checked_end_points.append(minimum_edge)
+        end_points.remove(minimum_edge)
+        cost_sum += mininum_edge_cost
+    mst_cache[frozenset(original_end_points)] = cost_sum
     return cost_sum
 
     ############################################################################
 
+def make_tree(end_points, maze):
 
-def stage3_heuristic():
-    pass
+    def target_bfs(start, end, maze):
+        path_list = []
+        for i in range(maze.rows):
+            path_list.append([])
+            for j in range(maze.cols):
+                path_list[i].append(None)
+        path_list[start[0]][start[1]] = [list(start)]
+
+        frontiers = deque([start])
+
+        while len(frontiers) > 0:
+            x, y = frontiers.popleft()
+
+            if end[0] == x and end[1] == y:
+                return path_list[x][y]
+            for new_x, new_y in maze.neighborPoints(x, y):
+                if maze.isWall(new_x, new_y):  # 다음 탐색할 좌표가 벽인지 확인
+                    continue
+                if path_list[new_x][new_y]:  # 다음 탐색할 좌표가 이미 탐색한 좌표인지 확인 ( closed된 곳인지 확인 )
+                    continue
+
+                path_list[new_x][new_y] = path_list[x][y] + [[new_x, new_y]]
+                frontiers.append([new_x, new_y])
+        return []
+
+    edge_cost_list = dict()
+    edge_path_list = dict()
+    for i in range(len(end_points)-1):
+        for j in range(i+1, len(end_points)):
+            edge_path_list[end_points[i], end_points[j]] = target_bfs(end_points[i], end_points[j], maze)
+            edge_path_list[end_points[j], end_points[i]] = edge_path_list[end_points[i], end_points[j]][::-1]
+            edge_cost_list[end_points[i], end_points[j]] = len(edge_path_list[end_points[i], end_points[j]])
+            edge_cost_list[end_points[j], end_points[i]] = edge_cost_list[end_points[i], end_points[j]]
+    return edge_cost_list, edge_path_list
 
 
 def astar_many_circles(maze):
@@ -259,33 +301,45 @@ def astar_many_circles(maze):
     알고리즘을 활용한 heuristic function이어야 한다.)
     """
 
-    end_points= maze.circlePoints()
+    end_points = maze.circlePoints()
     end_points.sort()
-
-    path=[]
+    path = []
 
     ####################### Write Your Code Here ################################
+    class frontier_node:  # frontier list의 node를 위한 class
+        def __init__(self, current_point, end_points, g, h, prev):
+            self.current_point = current_point
+            self.g = g
+            self.f = self.g + h
+            self.end_points = end_points  # A deep copy
+            self.prev = prev
 
+        def __lt__(self, other):  # priority queue 사용을 위해 객체 간 비교 속성 설정
+            return self.f < other.f  # a* 알고리즘은 f(n)값에 따라 frontier 우선순위가 결정되므로 f값 비교
 
+    start_point = maze.startPoint()
+    mst_cache = dict()
 
+    edge_cost_list, edge_path_list = make_tree([start_point] + end_points, maze)
+    frontiers = []
+    heapq.heappush(frontiers, frontier_node(start_point, end_points, 0, mst(end_points, edge_cost_list, mst_cache), None))
 
+    while len(frontiers) > 0:
+        current_node = heapq.heappop(frontiers)
 
+        if len(current_node.end_points) == 0:
+            while current_node.prev:
+                path += edge_path_list[current_node.current_point, current_node.prev.current_point][:-1]
+                current_node = current_node.prev
+            path.append(start_point)
+            return path[::-1]
 
+        for end_point in current_node.end_points:
+            next_g = current_node.g + edge_cost_list[current_node.current_point, end_point]
+            next_end_points = deepcopy(current_node.end_points)
+            next_end_points.remove(end_point)
+            heapq.heappush(frontiers, frontier_node(end_point, next_end_points, next_g, mst(next_end_points, edge_cost_list, mst_cache), current_node))
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    return path
+    return []
 
     ############################################################################
