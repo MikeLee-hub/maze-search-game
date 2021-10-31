@@ -20,32 +20,30 @@ def bfs(maze):
     """
     [문제 01] 제시된 stage1의 맵 세가지를 BFS Algorithm을 통해 최단 경로를 return하시오.(20점)
     """
-    start_point=maze.startPoint()
-
-    path=[]
-
+    start_point = maze.startPoint()
     ####################### Write Your Code Here ################################
 
-    path_list = []  # 경로를 저장할 이차원 배열 생성. 이 배열을 이용해 closed 여부도 파악할 수 있다.
-    for i in range(maze.rows):  # x: rows , y : cols
+    path_list = []                      # 경로를 저장할 이차원 배열 생성. 이 배열을 이용해 closed 여부도 파악할 수 있다.
+    for i in range(maze.rows):          # x: rows , y : cols
         path_list.append([])
         for j in range(maze.cols):
             path_list[i].append(None)
     path_list[start_point[0]][start_point[1]] = [list(start_point)]
 
-    frontiers = deque([start_point])  # bfs의 frontier을 저장할 fifo queue
+    frontiers = deque([start_point])    # bfs의 frontier을 저장할 fifo queue
 
     while len(frontiers) > 0:
         x, y = frontiers.popleft()
+
+        if maze.isObjective(x, y):
+            return path_list[x][y]
         for new_x, new_y in maze.neighborPoints(x, y):
-            if maze.isWall(new_x, new_y):  # 다음 탐색할 좌표가 벽인지 확인
+            if maze.isWall(new_x, new_y):                   # 다음 탐색할 좌표가 벽인지 확인
                 continue
-            if path_list[new_x][new_y]:  # 다음 탐색할 좌표가 이미 탐색한 좌표인지 확인 ( closed된 곳인지 확인 )
+            if path_list[new_x][new_y]:           # 다음 탐색할 좌표가 이미 탐색한 좌표인지 확인 ( closed된 곳인지 확인 )
                 continue
 
             path_list[new_x][new_y] = path_list[x][y] + [[new_x, new_y]]
-            if maze.isObjective(new_x, new_y):
-                return path_list[new_x][new_y]
             frontiers.append([new_x, new_y])
 
     return []
